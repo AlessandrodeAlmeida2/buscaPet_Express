@@ -34,52 +34,62 @@
 
 <script setup>
 import { ref } from 'vue';
-import { supabase } from '../supabase'
+import { supabase } from '../supabase';
 import { useRouter } from 'vue-router';
 
-//connect inputs
-let email = ref('');
-let password = ref ('');
-const router = useRouter()
+const email = ref('');
+const password = ref('');
+const errorMessage = ref('');
+const router = useRouter();
 
-//login
+// Login do usuário
 async function signIn() {
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.value,
-        password: password.value
-    })
+  try {
+    const { data: session, error } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    });
+
     if (error) {
-        console.log(error);
-        window.alert("E-mail ou senha incorretos")
-    } else {
-        console.log(data);
-        router.push('/home');
+      console.error('Erro no login:', error.message);
+      errorMessage.value = 'E-mail ou senha incorretos'; // Mensagem amigável
+      window.alert(errorMessage.value);
+      return;
     }
+
+    if (session) {
+      // Salva o token no localStorage
+      localStorage.setItem('accessToken', session.session.access_token);
+      console.log('Login bem-sucedido, token salvo:', session.session.access_token);
+
+      // Redireciona para a página principal
+      router.push('/home');
+    }
+  } catch (err) {
+    console.error('Erro inesperado no login:', err.message);
+    errorMessage.value = 'Ocorreu um erro ao tentar fazer login. Tente novamente.';
+    window.alert(errorMessage.value);
+  }
 }
 
-//seeCurrentUser
-/*async function seeCurrentUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        console.log(session);
-        console.log(session.user.phone);
-    } else {
-        console.log('No active session');
-    }
-}*/
-
-
-//logout
+// Logout do usuário
 async function signOut() {
+  try {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-        console.log(error);
-    } else {
-        console.log("Logout has been successful")
+      console.error('Erro no logout:', error.message);
+      return;
     }
-}
 
+    // Remove o token do localStorage
+    localStorage.removeItem('accessToken');
+    console.log('Logout bem-sucedido');
+    router.push('/login'); // Redireciona para a tela de login
+  } catch (err) {
+    console.error('Erro inesperado ao tentar sair:', err.message);
+  }
+}
 </script>
 
 <style>

@@ -1,6 +1,5 @@
 <script>
 import { ref, onMounted, watch } from 'vue';
-import { supabase } from '../supabase'
 import { useRouter } from 'vue-router';
 
 export default {
@@ -13,78 +12,163 @@ export default {
     const categoria = ref('');
     const router = useRouter();
 
-    //connect inputs
-
-    //seeCurrentUser
+    // Função para obter o usuário atual pela API Express
     async function seeCurrentUser() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            userId.value = session.user.id;
-            console.log(userId.value);
+      try {
+        const response = await fetch('https://api-express-sand.vercel.app/current-user', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Ajuste se necessário
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('Token de autenticação:', localStorage.getItem('accessToken'));
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('User ID:', data.userId);
+          userId.value = data.userId;
         } else {
-            console.log('No active session');
+          console.error('Erro ao recuperar usuário:', await response.json());
         }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+      }
     }
 
+    // Função para obter itens pela API Express
     async function getItems() {
-    let query = supabase.from('tabela1').select().eq('user_id', userId.value);
-  
-      if (categoria.value) {
-        query = query.eq('situation', categoria.value);
+      try {
+        let url = `https://api-express-sand.vercel.app/dados?user_id=${userId.value}`;
+        if (categoria.value) {
+          url += `&situation=${categoria.value}`;
+        }
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          results.value = data;
+        } else {
+          console.error('Erro ao buscar itens:', await response.json());
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
       }
-      
-      const { data } = await query;
-      results.value = data;
     }
 
     watch(categoria, getItems);
 
-    const updateItem = async () => {
-    const { data, error } = await supabase
-      .from('usuario')
-      .upsert({ nameUser: item.value.nameUser, cel: item.value.cel })
-      .eq('id', userId.value)
+    // Função para atualizar um item
+    async function updateItem() {
+      try {
+        const response = await fetch(`https://api-express-sand.vercel.app/dados/${itemId.value}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nameUser: item.value.nameUser,
+            cel: item.value.cel,
+          }),
+        });
 
-    if (error) {
-      console.log(error)
-    } else {
-      router.push('/read');
-    }
-  }
-
-    async function deleteItem(id) {
-      const result = results.value.find(result => result.id === id);
-      if (result) {
-        // Extrai o nome do arquivo da URL
-        const path = result.photo_url.split('/').pop();
-        console.log(path)
-
-        // Remove a imagem do bucket do Supabase
-        await supabase.storage.from('PI_Bucket').remove([path]);
-
-        // Deleta o item da tabela
-        await supabase.from('tabela1').delete().eq('id', id);
-        getItems(); // Atualiza a lista após deletar o item
+        if (response.ok) {
+          console.log('Item atualizado com sucesso');
+          router.push('/read');
+        } else {
+          console.error('Erro ao atualizar item:', await response.json());
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
       }
     }
 
-    function updatePost(id) {
-      itemId.value = id
-      router.push({ name: 'update', params: { itemId: itemId.value } })
+    // Função para deletar um item e remover sua imagem
+    async function deleteItem(id) {
+      try {
+        const response = await fetch(`https://api-express-sand.vercel.app/delete-item/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          console.log('Item e imagem deletados com sucesso');
+          getItems(); // Atualiza a lista após exclusão
+        } else {
+          console.error('Erro ao deletar item:', await response.json());
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+      }
     }
 
-    function getItem(id) {
-      getId.value = id // Defina getId.value em vez de itemId.value
-      router.push({ name: 'upload', params: { getId: getId.value } })
+    // Função para obter detalhes de um item específico
+    async function getItem(id) {
+      try {
+        const response = await fetch(`https://api-express-sand.vercel.app/dados/${id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Item obtido:', data);
+          getId.value = data;
+          router.push({ name: 'upload', params: { getId: id } });
+        } else {
+          console.error('Erro ao obter item:', await response.json());
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+      }
     }
 
+    // Configurações ao montar o componente
     onMounted(async () => {
-        await seeCurrentUser();
-        await getItems();
-        const { data } = await supabase.from('usuario').select().eq('id', userId.value)
-        item.value = data[0]
-        console.log(item.value)
-    })
+      await seeCurrentUser();
+      await getItems();
+
+      // Busca informações adicionais do usuário pela API Express
+      try {
+        const response = await fetch(`https://api-express-sand.vercel.app/usuario/${userId.value}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          item.value = data;
+          console.log(item.value);
+        } else {
+          console.error('Erro ao buscar informações do usuário:', await response.json());
+        }
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+      }
+    });
+
+    // Funções auxiliares para navegação
+    function updatePost(id) {
+      itemId.value = id;
+      router.push({ name: 'update', params: { itemId: itemId.value } });
+    }
+
+    function getItemDetails(id) {
+      getId.value = id;
+      router.push({ name: 'upload', params: { getId: getId.value } });
+    }
 
     return {
       item,
@@ -93,10 +177,10 @@ export default {
       updatePost,
       deleteItem,
       updateItem,
-      getItem
-    }
-  }
-}
+      getItemDetails,
+    };
+  },
+};
 </script>
 
 <template>

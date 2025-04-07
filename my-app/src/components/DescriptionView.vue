@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { supabase } from '../supabase'
 import { useRoute } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet-routing-machine'
@@ -26,43 +25,69 @@ const userId = ref(null)
 const latitude = ref(null)
 const longitude = ref(null)
 
-async function seeUser() { 
-  const { data, error } = await supabase.from('tabela1').select('user_id').eq('id', getId)
-  if (!error && data.length > 0) {
-    userId.value = data[0].user_id
-  } else {
-    console.log('Erro ao obter user_id:', error)
+async function seeUser() {
+  try {
+    const response = await fetch(`https://api-express-sand.vercel.app/dados/${getId}`)
+
+    if (!response.ok) {
+      throw new Error('Erro ao buscar dados do usuário')
+    }
+
+    const data = await response.json()
+
+    if (data && data.length > 0) {
+      userId.value = data[0].user_id
+    } else {
+      console.log('Nenhum dado encontrado')
+    } 
+  } catch (error) {
+    console.error('Erro ao buscar dados do usuário:', error)
   }
 }
 
 async function seePhoneUser() {
-  const { data, error } = await supabase
-    .from('usuario')
-    .select('cel')
-    .eq('id', userId.value)
-    
-  if (!error && data.length > 0) {
-    userPhone.value = data[0].cel
-  } else {
-    console.log('Erro ao obter celular:', error)
+  try {
+    const response = await fetch(`https://api-express-sand.vercel.app/user-profile/${userId.value}`)
+
+    if (!response.ok) {
+      throw new Error('Erro ao buscar dados do usuário')
+    }
+
+    const data = await response.json()
+
+    if (data && data.length > 0) {
+      userPhone.value = data[0].cel 
+    } else {
+      console.log('Nenhum dado encontrado')
+    }
+  } catch (error) {
+    console.error('Erro ao buscar dados do usuário:', error)
   }
 }
 
 async function seeNameUser() {
-  const { data, error } = await supabase
-    .from('usuario')
-    .select('nameUser')
-    .eq('id', userId.value)
-    
-  if (!error && data.length > 0) {
-    nameUser.value = data[0].nameUser
-  } else {
-    console.log('Erro ao obter nome:', error)
+  try {
+    const response = await fetch(`https://api-express-sand.vercel.app/user-profile/${userId.value}`)
+
+    if (!response.ok) {
+      throw new Error('Erro ao buscar nome do usuário')
+    }
+
+    const data = await response.json()
+
+    if (data && data.length > 0) {
+      nameUser.value = data[0].nameUser
+    } else {
+      console.log('Nenhum dado encontrado')
+    }
+  } catch (error) {
+    console.error('Erro ao buscar nome do usuário:', error)
   }
 }
 
 onMounted(async () => {
-  const { data } = await supabase.from('tabela1').select().eq('id', getId)
+  const response = await fetch(`https://api-express-sand.vercel.app/dados/${getId}`)
+  const data = await response.json()
   if (data && data.length > 0) {
     item.value = data[0]
     latitude.value = item.value.latitude
@@ -83,36 +108,30 @@ onMounted(async () => {
           .bindPopup('Local onde foi encontrado/visto')
           .openPopup()
 
-        // Pega a localização do usuário e traça a rota
         navigator.geolocation.getCurrentPosition(position => {
           const userLatLng = L.latLng(position.coords.latitude, position.coords.longitude);
           const animalLatLng = L.latLng(latitude.value, longitude.value);
 
-          const routingControl = L.Routing.control({
-            waypoints: [
-              userLatLng,
-              animalLatLng
-            ],
+          L.Routing.control({
+            waypoints: [userLatLng, animalLatLng],
             routeWhileDragging: false,
             addWaypoints: false,
             draggableWaypoints: false,
-            show: false, // <-- oculta o painel de texto
+            show: false,
             createMarker: () => null
-          }).addTo(map);
+          }).addTo(map)
 
-          // Remove o container HTML com instruções
-          const routingContainer = document.querySelector('.leaflet-routing-container');
+          const routingContainer = document.querySelector('.leaflet-routing-container')
           if (routingContainer) {
-            routingContainer.remove();
+            routingContainer.remove()
           }
         }, error => {
-          console.error('Erro ao acessar localização do usuário:', error);
-        });
+          console.error('Erro ao acessar localização do usuário:', error)
+        })
       }
-    }, 300); // Dá tempo pro DOM renderizar o mapa
+    }, 300)
   }
-});
-
+})
 </script>
 
 <template>

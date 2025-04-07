@@ -37,6 +37,7 @@ async function seeUser() {
 
     if (data && data.length > 0) {
       userId.value = data[0].user_id
+      console.log('ID do usuário:', userId.value)
     } else {
       console.log('Nenhum dado encontrado')
     } 
@@ -55,8 +56,9 @@ async function seePhoneUser() {
 
     const data = await response.json()
 
-    if (data && data.length > 0) {
-      userPhone.value = data[0].cel 
+    if (data && data.cel) {
+      userPhone.value = data.cel 
+      console.log('Celular do usuário:', userPhone.value)
     } else {
       console.log('Nenhum dado encontrado')
     }
@@ -75,8 +77,9 @@ async function seeNameUser() {
 
     const data = await response.json()
 
-    if (data && data.length > 0) {
-      nameUser.value = data[0].nameUser
+    if (data && data.nameUser) {
+      nameUser.value = data.nameUser
+      console.log('Nome do usuário:', nameUser.value)
     } else {
       console.log('Nenhum dado encontrado')
     }
@@ -92,6 +95,8 @@ onMounted(async () => {
     item.value = data[0]
     latitude.value = item.value.latitude
     longitude.value = item.value.longitude
+    console.log('Latitude:', latitude.value)
+    console.log('Longitude:', longitude.value)
     await seeUser()
     await seePhoneUser()
     await seeNameUser()

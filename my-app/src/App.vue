@@ -38,10 +38,12 @@
 
 <script>
 import '@fortawesome/fontawesome-free/css/all.css'
-import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { ref, onMounted, watch } from 'vue';
 import { supabase } from './supabase';
 import FooterView from '@/components/FooterView.vue';
+
+const router = useRouter();
 
 export default {
   name: 'App',
@@ -54,13 +56,22 @@ export default {
 
     //logout
     async function signOut() {
+    try {
       const { error } = await supabase.auth.signOut();
+
       if (error) {
-        console.log(error);
-      } else {
-        console.log("Logout has been successful");
+        console.error('Erro no logout:', error.message);
+        return;
       }
+
+      // Remove o token do localStorage
+      localStorage.removeItem('accessToken');
+      console.log('Logout bem-sucedido');
+      router.push('/login'); // Redireciona para a tela de login
+    } catch (err) {
+      console.error('Erro inesperado ao tentar sair:', err.message);
     }
+  }
 
     const openChat = () => {
       window.open('https://dogbot-d7fb9f.zapier.app/', '_blank', 'width=400,height=600');

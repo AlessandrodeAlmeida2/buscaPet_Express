@@ -129,6 +129,11 @@ const router = createRouter({
       name: 'anuncio',
       component: AnuncioView
     },
+    {
+      path: '/api',
+      name: 'api',
+      component: () => import('@/components/ApiView.vue')
+    }
   ]
 })
 

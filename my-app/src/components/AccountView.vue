@@ -18,7 +18,7 @@ export default {
         const response = await fetch('https://api-express-sand.vercel.app/current-user', {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`, // Ajuste se necessário
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
             'Content-Type': 'application/json',
           },
         });
@@ -36,14 +36,58 @@ export default {
       }
     }
 
-    // Função para obter itens pela API Express
+    // NOVA FUNÇÃO: Buscar dados do perfil do usuário
+    async function getUserProfile() {
+      try {
+        // Garante que o userId foi definido
+        if (!userId.value) {
+          await seeCurrentUser();
+          if (!userId.value) {
+            console.error('User ID não encontrado. Não é possível buscar o perfil.');
+            return;
+          }
+        }
+        
+        const response = await fetch(`https://api-express-sand.vercel.app/user-profile/${userId.value}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Dados do perfil do usuário:', data);
+          item.value = data; // Isso vai alimentar os campos do formulário
+        } else {
+          const errorText = await response.text();
+          console.error('Erro ao buscar perfil do usuário. Status:', response.status, 'Resposta:', errorText);
+        }
+      } catch (error) {
+        console.error('Erro na requisição de perfil do usuário:', error);
+      }
+    }
+
     async function getItems() {
       try {
-        let url = `https://api-express-sand.vercel.app/dados?user_id=${userId.value}`;
+        // Garante que o usuário atual seja recuperado
+        if (!userId.value) {
+          await seeCurrentUser();
+          if (!userId.value) {
+            console.error('User ID não encontrado. Aborte a busca.');
+            return;
+          }
+        }
+
+        // Construção da URL de requisição corrigida
+        let url = `https://api-express-sand.vercel.app/usuario/${userId.value}?user_id=${userId.value}`;
         if (categoria.value) {
           url += `&situation=${categoria.value}`;
         }
 
+        console.log('Buscando itens na URL:', url);
+
+        // Faz a requisição ao servidor
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -51,23 +95,40 @@ export default {
           },
         });
 
+        // Processa a resposta
         if (response.ok) {
           const data = await response.json();
           results.value = data;
+          console.log('Itens recebidos:', data);
         } else {
-          console.error('Erro ao buscar itens:', await response.json());
+          const errorText = await response.text();
+          console.error('Erro ao buscar itens. Status:', response.status, 'Resposta:', errorText);
         }
       } catch (error) {
         console.error('Erro na requisição:', error);
       }
     }
 
-    watch(categoria, getItems);
+    // Observa mudanças na categoria e chama getItems novamente
+    watch(categoria, () => {
+      getItems();
+    });
 
-    // Função para atualizar um item
+    // ATUALIZADA: Função para atualizar dados do perfil do usuário
     async function updateItem() {
       try {
-        const response = await fetch(`https://api-express-sand.vercel.app/dados/${itemId.value}`, {
+        // Verifica se o userId foi definido
+        if (!userId.value) {
+          console.error('User ID não encontrado. Não é possível atualizar o perfil.');
+          return;
+        }
+        
+        console.log('Atualizando dados do usuário:', {
+          nameUser: item.value.nameUser,
+          cel: item.value.cel,
+        });
+        
+        const response = await fetch(`https://api-express-sand.vercel.app/user-profile/${userId.value}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -77,16 +138,23 @@ export default {
             cel: item.value.cel,
           }),
         });
-
+        
         if (response.ok) {
-          console.log('Item atualizado com sucesso');
-          router.push('/read');
+          console.log('Perfil do usuário atualizado com sucesso');
+          // Opcional: Exibir uma mensagem de sucesso ao usuário
         } else {
-          console.error('Erro ao atualizar item:', await response.json());
+          const errorText = await response.text();
+          console.error('Erro ao atualizar perfil do usuário. Status:', response.status, 'Resposta:', errorText);
         }
       } catch (error) {
-        console.error('Erro na requisição:', error);
+        console.error('Erro na requisição de atualização de perfil:', error);
       }
+    }
+
+    // Função para atualizar um post
+    async function updatePost(id) {
+      itemId.value = id;
+      router.push({ name: 'update', params: { itemId: itemId.value } });
     }
 
     // Função para deletar um item e remover sua imagem
@@ -103,7 +171,8 @@ export default {
           console.log('Item e imagem deletados com sucesso');
           getItems(); // Atualiza a lista após exclusão
         } else {
-          console.error('Erro ao deletar item:', await response.json());
+          const errorText = await response.text();
+          console.error('Erro ao deletar item. Status:', response.status, 'Resposta:', errorText);
         }
       } catch (error) {
         console.error('Erro na requisição:', error);
@@ -126,7 +195,8 @@ export default {
           getId.value = data;
           router.push({ name: 'upload', params: { getId: id } });
         } else {
-          console.error('Erro ao obter item:', await response.json());
+          const errorText = await response.text();
+          console.error('Erro ao obter item. Status:', response.status, 'Resposta:', errorText);
         }
       } catch (error) {
         console.error('Erro na requisição:', error);
@@ -136,34 +206,9 @@ export default {
     // Configurações ao montar o componente
     onMounted(async () => {
       await seeCurrentUser();
-      await getItems();
-
-      // Busca informações adicionais do usuário pela API Express
-      try {
-        const response = await fetch(`https://api-express-sand.vercel.app/usuario/${userId.value}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          item.value = data;
-          console.log(item.value);
-        } else {
-          console.error('Erro ao buscar informações do usuário:', await response.json());
-        }
-      } catch (error) {
-        console.error('Erro na requisição:', error);
-      }
+      await getUserProfile(); // Busca os dados do perfil do usuário
+      await getItems();       // Busca os itens/postagens do usuário
     });
-
-    // Funções auxiliares para navegação
-    function updatePost(id) {
-      itemId.value = id;
-      router.push({ name: 'update', params: { itemId: itemId.value } });
-    }
 
     function getItemDetails(id) {
       getId.value = id;
@@ -174,6 +219,7 @@ export default {
       item,
       results,
       seeCurrentUser,
+      getUserProfile,
       updatePost,
       deleteItem,
       updateItem,

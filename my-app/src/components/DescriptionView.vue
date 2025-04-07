@@ -4,6 +4,17 @@ import { supabase } from '../supabase'
 import { useRoute } from 'vue-router'
 import L from 'leaflet'
 
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+
+// Corrige o caminho das imagens
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
 const route = useRoute()
 const getId = route.params.getId
 

@@ -134,6 +134,22 @@ const router = createRouter({
       name: 'ongs_parceiras',
       component: () => import('@/components/OngsParceiras.vue')
     },
+    {
+      path: '/cadastro_adocao',
+      name: 'cadastro_adocao',
+      component: () => import('@/components/CadastroAdocao.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/adocao',
+      name: 'adocao',
+      component: () => import('@/components/Adocao.vue'),
+    },
+    {
+      path: '/description2/:getId',
+      name: 'description2',
+      component: () => import('@/components/Description2.vue'),
+    },
   ]
 })
 

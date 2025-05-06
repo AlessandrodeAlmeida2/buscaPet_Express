@@ -2,12 +2,12 @@
     <div class="container-read">
         <h1>Animais para Adoção</h1>
       <div class="option">
-        <!-- <v-select
-          v-model="categoria"
-          label="Categorias"
-          :items="[' ', 'Perdido', 'Encontrado']"
+        <v-select
+          v-model="specie"
+          label="Espécie"
+          :items="['Cachorro', 'Gato', 'Outro']"
           variant="solo-filled"
-        ></v-select> -->
+        ></v-select>
       </div>
       <ul>
         <li v-for="item in items" :key="item.id">
@@ -20,7 +20,7 @@
       </ul>
 
       <div class="separador">
-        <span>Ou</span>
+        <p>____________________<span>Ou</span>____________________</p>
       </div>
 
       <div class="cadastro">
@@ -39,7 +39,7 @@
       import { useRouter } from 'vue-router'
       import useItems from '@/Composable/useItems'
   
-      const { items, categoria, getItems2 } = useItems(' ')
+      const { items, specie, getItems2 } = useItems(' ')
       const getId = ref(null)
       const router = useRouter()
   
@@ -64,7 +64,7 @@
   <style>
   .option {
     width: 300px;
-    margin-left: 20%;
+    margin-left: 10%;
     margin-top: 80px;
     animation: slideLeft 2s ease forwards;
   }
@@ -81,7 +81,7 @@
 
   .separador {
     text-align: center;
-    margin-top: 20px;
+    margin: 50px;
     animation: slideLeft 2s ease forwards;
   }
 
